@@ -3,7 +3,8 @@ FROM openshift/origin:latest
 # Reset the entrypoint
 ENTRYPOINT ["/bin/sh", "-c"]
 
-RUN yum install -y clamav-server clamav-scanner clamav-data --disablerepo=origin-local-release \
+RUN yum install -y epel-release \
+      && yum install -y clamav-server clamav-scanner clamav-data \
       && mkdir -p /image-data && chmod 0777 /image-data
 
 # Copy the default clamav configuration. For custom configuration, create a VOLUME.
