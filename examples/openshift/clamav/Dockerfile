@@ -1,7 +1,8 @@
-FROM openshift/origin:latest
+#FROM openshift/origin:latest
+FROM openshift/origin:v3.6.1
 
 # Reset the entrypoint
-ENTRYPOINT ["/bin/sh", "-c"]
+#ENTRYPOINT ["/bin/sh", "-c"]
 
 RUN yum install -y epel-release \
       && yum install -y clamav-server clamav-scanner clamav-data \
