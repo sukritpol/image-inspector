@@ -76,7 +76,13 @@ func RunResultsServer(result chan api.ScanResult) error {
 		if err := json.Unmarshal(body, &resultObj); err != nil {
 			log.Fatalf("Error parsing response body: %v", err)
 		}
-		log.Printf("--> Scan report received, %d problems found ... and result is %v", len(resultObj.Results), resultObj.Results)
+		log.Printf("--> Scan report received, %d problems found ...", len(resultObj.Results))
+
+		if len(resultObj.Results) > 0 {
+			log.Printf("result is %v", resultObj.Results)
+		} 
+		log.Printf("--> Finished Scan ...")
+
 		result <- resultObj
 	})
 
