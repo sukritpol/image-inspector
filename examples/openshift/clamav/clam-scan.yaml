@@ -4,7 +4,7 @@ metadata:
   generateName: imagescan
 spec:
   containers:
-  - image CLAMSCAN_SOURCE_IMAGE
+  - image: CLAMSCAN_SOURCE_IMAGE
     imagePullPolicy: Always
     name: imagescan
     env:
