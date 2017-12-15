@@ -7,4 +7,5 @@ echo "--> copying image-inspector ..."
 cp ../../../_output/local/bin/local/image-inspector .
 
 echo "--> building docker.io/sukritpol/clamav-scan:latest ..."
-docker build --quiet -t docker.io/sukritpol/clamav-scan:latest .
+#docker build --quiet -t docker.io/sukritpol/clamav-scan:latest .
+docker build -t docker.io/sukritpol/clamav-scan:latest .

@@ -66,7 +66,7 @@ func RunClam(ready chan struct{}) error {
 	return nil
 }
 
-func RunResultsServer(result chan api.ScanResult) error {
+func RunResultsServer(result chan api.ScanResult, image string) error {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -81,7 +81,7 @@ func RunResultsServer(result chan api.ScanResult) error {
 		if len(resultObj.Results) > 0 {
 			log.Printf("result is %v", resultObj.Results)
 		} 
-		log.Printf("--> Finished Scan ...")
+		log.Printf("--> Finished Scan [%v] ...", image)
 
 		result <- resultObj
 	})
@@ -134,7 +134,7 @@ func main() {
 	<-clamIsReady
 
 	results := make(chan api.ScanResult)
-	err := RunResultsServer(results)
+	err := RunResultsServer(results, os.Getenv("TARGET_IMAGE"))
 	if err != nil {
 		log.Fatalf("Error running result server: %v", err)
 	}
