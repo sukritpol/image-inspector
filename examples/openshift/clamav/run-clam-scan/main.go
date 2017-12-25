@@ -38,38 +38,6 @@ var (
 	}
 )
 
-func RunFreshClam(ready chan struct{}) error {
-	cmd := exec.Command(FreshClamDaemonPath, FreshClamDaemonDefaultArgs...)
-	stdout, err := cmd.StdoutPipe()
-	cmd.Stderr = os.Stderr
-	if err != nil {
-		return err
-	}
-	go func() {
-		r := bufio.NewReader(stdout)
-		for {
-			line, _, err := r.ReadLine()
-			if err == io.EOF {
-				log.Fatalf("Failed to run freshclam")
-				break
-			}
-			if err != nil {
-				log.Fatalf("Failed to read freshclam output: %v", err)
-			}
-			if bytes.Contains(line, []byte("Database updated")) {
-				log.Printf("freshclam is ready for clamav scan ...")
-				close(ready)
-				break
-			}
-		}
-	}()
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	go cmd.Wait()
-	return nil
-}
-
 func RunClam(ready chan struct{}) error {
 	cmd := exec.Command(ClamDaemonPath, ClamDaemonDefaultArgs...)
 	stdout, err := cmd.StdoutPipe()
@@ -156,13 +124,6 @@ func main() {
 	if err := ValidateEnv(); err != nil {
 		log.Fatalf("Error: %v", err)
 	}
-
-	freshClamIsReady := make(chan struct{})
-	if err := RunFreshClam(freshClamIsReady); err != nil {
-		log.Fatalf("Error running fresclam: %v", err)
-	}
-	// Wait until clamd is fully initialized.
-	<-freshClamIsReady
 
 	clamIsReady := make(chan struct{})
 	if err := RunClam(clamIsReady); err != nil {

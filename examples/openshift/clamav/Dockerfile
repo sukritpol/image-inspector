@@ -19,4 +19,4 @@ COPY run-clam-scan/run-clam-scan /usr/bin/run-clam-scan
 # Copy the image inspector binary
 COPY image-inspector /usr/bin/image-inspector
 
-CMD ["/usr/bin/run-clam-scan"]
+CMD ["freshclam; /usr/bin/run-clam-scan"]
