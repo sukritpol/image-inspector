@@ -19,15 +19,11 @@ import (
 const (
 	ClamDaemonPath = "/usr/sbin/clamd"
 	InspectorPath  = "/usr/bin/image-inspector"
-	FreshClamDaemonPath = "/usr/sbin/freshclam"
 )
 
 var (
 	ClamDaemonDefaultArgs = []string{
 		"--config-file", "/etc/clamd.d/local.conf",
-	}
-	FreshClamDaemonDefaultArgs = []string{
-		"--config-file", "/etc/clamd.d/freshclam.conf",
 	}
 	InspectorDefaultArgs = []string{
 		"-clam-socket", "/tmp/clamd.sock",
@@ -37,38 +33,6 @@ var (
 		"-post-results-url", "http://127.0.0.1:8080/",
 	}
 )
-
-func RunFreshClam(ready chan struct{}) error {
-	cmd := exec.Command(FreshClamDaemonPath, FreshClamDaemonDefaultArgs...)
-	stdout, err := cmd.StdoutPipe()
-	cmd.Stderr = os.Stderr
-	if err != nil {
-		return err
-	}
-	go func() {
-		r := bufio.NewReader(stdout)
-		for {
-			line, _, err := r.ReadLine()
-			if err == io.EOF {
-				log.Fatalf("Failed to run freshclam")
-				break
-			}
-			if err != nil {
-				log.Fatalf("Failed to read freshclam output: %v", err)
-			}
-			if bytes.Contains(line, []byte("Database updated")) {
-				log.Printf("freshclam is ready for clamav scan ...")
-				close(ready)
-				break
-			}
-		}
-	}()
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	go cmd.Wait()
-	return nil
-}
 
 func RunClam(ready chan struct{}) error {
 	cmd := exec.Command(ClamDaemonPath, ClamDaemonDefaultArgs...)
@@ -102,7 +66,7 @@ func RunClam(ready chan struct{}) error {
 	return nil
 }
 
-func ShowResults(result chan api.ScanResult, image string) error {
+func RunResultsServer(result chan api.ScanResult, image string) error {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -116,11 +80,16 @@ func ShowResults(result chan api.ScanResult, image string) error {
 
 		if len(resultObj.Results) > 0 {
 			log.Printf("result is %v", resultObj.Results)
-		}
+		} 
 		log.Printf("--> Finished Scan [%v] ...", image)
 
 		result <- resultObj
 	})
+
+	go func() {
+		log.Printf("--> Waiting for scan results on 127.0.0.1:8080 ...")
+		http.ListenAndServe("127.0.0.1:8080", nil)
+	}()
 	return nil
 }
 
@@ -157,13 +126,6 @@ func main() {
 		log.Fatalf("Error: %v", err)
 	}
 
-	freshClamIsReady := make(chan struct{})
-	if err := FreshRunClam(freshClamIsReady); err != nil {
-		log.Fatalf("Error running fresclam: %v", err)
-	}
-	// Wait until clamd is fully initialized.
-	<-freshClamIsReady
-
 	clamIsReady := make(chan struct{})
 	if err := RunClam(clamIsReady); err != nil {
 		log.Fatalf("Error running clamd: %v", err)
@@ -172,9 +134,9 @@ func main() {
 	<-clamIsReady
 
 	results := make(chan api.ScanResult)
-	err := ShowResults(results, os.Getenv("TARGET_IMAGE"))
+	err := RunResultsServer(results, os.Getenv("TARGET_IMAGE"))
 	if err != nil {
-		log.Fatalf("Error show result: %v", err)
+		log.Fatalf("Error running result server: %v", err)
 	}
 
 	if err := RunInspector(os.Getenv("TARGET_IMAGE")); err != nil {
