@@ -158,7 +158,7 @@ func main() {
 	}
 
 	freshClamIsReady := make(chan struct{})
-	if err := FreshRunClam(freshClamIsReady); err != nil {
+	if err := RunFreshClam(freshClamIsReady); err != nil {
 		log.Fatalf("Error running fresclam: %v", err)
 	}
 	// Wait until clamd is fully initialized.
