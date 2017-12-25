@@ -11,6 +11,7 @@ RUN yum install -y epel-release \
 
 # Copy the default clamav configuration. For custom configuration, create a VOLUME.
 COPY clamd.conf /etc/clamd.d/local.conf
+COPY freshclam.conf /etc/clamd.d/freshclam.conf
 
 # Copy the scanner binary
 COPY run-clam-scan/run-clam-scan /usr/bin/run-clam-scan
